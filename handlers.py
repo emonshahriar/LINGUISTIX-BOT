@@ -1,7 +1,10 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
-from admin import upload_command, delete_command, is_admin
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telegram.ext import (
+    ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+)
+from admin import upload_command, delete_command, is_admin, inline_upload_handler, inline_delete_handler
 from db import get_resources, get_resource_by_id
+import logging
 
 SEMESTERS = {
     "1": [
@@ -85,6 +88,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
+    user_id = query.from_user.id
 
     if data.startswith("sem_"):
         sem = data.split("_")[1]
@@ -107,6 +111,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             for res in COURSE_RESOURCES
         ]
         keyboard.append([InlineKeyboardButton("Back", callback_data=f"sem_{sem}")])
+        # Add Upload button for admins
+        if is_admin(user_id):
+            keyboard.append([InlineKeyboardButton("Upload Resource", callback_data=f"upload_{sem}_{idx}")])
         await query.edit_message_text(
             f"Course: {course}\n",
             reply_markup=InlineKeyboardMarkup(keyboard)
@@ -118,6 +125,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resources = get_resources(sem, course, res)
         keyboard = [
             [InlineKeyboardButton(file_name, callback_data=f"file_{resource_id}")]
+            + ([InlineKeyboardButton("Delete", callback_data=f"delete_{resource_id}")] if is_admin(user_id) else [])
             for resource_id, file_name, file_id in resources
         ]
         keyboard.append([InlineKeyboardButton("Back", callback_data=f"course_{sem}_{idx}")])
@@ -136,13 +144,66 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.answer("File not found.", show_alert=True)
 
+    elif data.startswith("upload_"):
+        # Admin pressed "Upload Resource"
+        _, sem, idx = data.split("_")
+        # Save context for upload flow
+        context.user_data["upload_semester"] = sem
+        context.user_data["upload_course"] = SEMESTERS.get(sem, [])[int(idx)]
+        # Ask for resource type
+        keyboard = [
+            [InlineKeyboardButton(res, callback_data=f"uploadtype_{res.lower()}")]
+            for res in COURSE_RESOURCES
+        ]
+        await query.edit_message_text(
+            "Select resource type to upload:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data.startswith("uploadtype_"):
+        # Resource type selected, ask for file
+        resource_type = data.split("_")[1]
+        context.user_data["upload_resource_type"] = resource_type
+        await query.edit_message_text(
+            f"Send the file you want to upload for {context.user_data['upload_course']} ({resource_type})."
+        )
+        # Set a flag to handle next document message
+        context.user_data["awaiting_file_upload"] = True
+
+    elif data.startswith("delete_"):
+        # Admin pressed Delete for a resource
+        resource_id = data.split("_")[1]
+        context.user_data["delete_resource_id"] = resource_id
+        # Ask for confirmation
+        keyboard = [
+            [InlineKeyboardButton("Confirm Delete", callback_data=f"confirmdelete_{resource_id}")],
+            [InlineKeyboardButton("Cancel", callback_data=f"canceldelete_{resource_id}")]
+        ]
+        await query.edit_message_text(
+            "Are you sure you want to delete this resource?",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data.startswith("confirmdelete_"):
+        # Actually delete
+        resource_id = data.split("_")[1]
+        await inline_delete_handler(update, context, resource_id)
+    elif data.startswith("canceldelete_"):
+        await query.edit_message_text("Delete cancelled.")
+
     elif data == "help":
-        await query.edit_message_text("Help:\nUse the buttons to browse/download resources.\nAdmins: use /upload and /delete commands.")
+        await query.edit_message_text("Help:\nUse the buttons to browse/download resources.\nAdmins: use /upload and /delete commands, or inline buttons.")
     elif data == "back_to_start":
         await query.edit_message_text(
             "Select a semester:",
             reply_markup=start_keyboard()
         )
+
+async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Handle inline upload flow for admins
+    if context.user_data.get("awaiting_file_upload"):
+        await inline_upload_handler(update, context)
+        context.user_data["awaiting_file_upload"] = False
 
 def setup_handlers(app):
     app.add_handler(CommandHandler("start", start))
@@ -150,3 +211,4 @@ def setup_handlers(app):
     app.add_handler(CommandHandler("upload", upload_command))
     app.add_handler(CommandHandler("delete", delete_command))
     app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
