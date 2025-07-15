@@ -9,63 +9,63 @@ SEMESTERS = {
         "UG1102 Historical Linguistics",
         "UG1103 Academic Bangla",
         "UG1104 Academic English",
-        "UG GEDC01 Sociology Anthropology"
+        "GEDC01 Sociology Anthropology"
     ],
     "2": [
         "UG1205 Morphology 1",
         "UG1206 Phonetics and Phonology 1",
         "UG1207 Writing System and Orthography",
-        "UG GEDC02 ICT Fundamentals",
-        "UG GEDC03 Psychology"
+        "GEDC02 ICT Fundamentals",
+        "GEDC03 Psychology"
     ],
     "3": [
         "UG2301 Syntax 1",
         "UG2302 Semantics",
         "UG2303 Lexicology",
-        "UG GEDC04 Bangla Literature"
+        "GEDC04 Bangla Literature"
     ],
     "4": [
         "UG2404 Morphology 2",
         "UG2405 Pragmatics",
         "UG2406 Sociolinguistics",
         "UG2407 Modern Schools of Linguistic Thought",
-        "UG GEDN01 Leadership and Communication Development"
+        "GEDN01 Leadership and Communication Development"
     ],
     "5": [
         "UG3501 Phonetics 2",
         "UG3502 Sign Language and Non-Verbal Communication",
         "UG3503 Semiotics and Communication Studies",
         "UG3504 Educational Linguistics",
-        "UG GEDC05 Introduction to Statistics",
-        "UG GEDC06 General Mathematics",
-        "UG GEDN02 A Modern Language"
+        "GEDC05 Introduction to Statistics",
+        "GEDC06 General Mathematics",
+        "GEDN02 A Modern Language"
     ],
     "6": [
         "UG3605 Phonology 2",
         "UG3606 Research Methodology",
         "UG3607 Language Policy and Planning",
-        "UG GEDC07 Bangla Literature 2",
-        "UG GEDN03 Professional Ethics"
+        "GEDC07 Bangla Literature 2",
+        "GEDN03 Professional Ethics"
     ],
     "7": [
         "UG4701 Syntax 2",
         "UG4702 Language Documentation and Linguistic Field Methods",
         "UG4703 Stylistics",
-        "UG GEDC08 Fundamentals of ICT"
+        "GEDC08 Fundamentals of ICT"
     ],
     "8": [
         "UG4804 Psycholinguistics",
         "UG4805 Clinical Linguistics",
         "UG4806 Dialectology and Bangla Dialects",
-        "UG GEDC09 Bangladesh Studies",
-        "UG TC4810 Capstone Course/Thesis/Internship"
+        "GEDC09 Bangladesh Studies",
+        "TC4810 Capstone Course/Thesis/Internship"
     ]
 }
 COURSE_RESOURCES = ["Books", "Past Questions", "Syllabus", "Notes"]
 
 def start_keyboard():
     keyboard = [
-        [InlineKeyboardButton(f"Semester {i}", callback_data=f"sem_{i}") for i in range(1, 9)],
+        [InlineKeyboardButton(f"{i}", callback_data=f"sem_{i}") for i in range(1, 9)],
         [InlineKeyboardButton("Help", callback_data="help")]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -78,8 +78,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Use the inline keyboard to browse resources.\n"
-        "Admins: /upload to upload files, /delete to delete files."
+        "Use the inline keyboard to navigate through resources. Select semester, course, and the type of resource you want.\n"
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -109,7 +108,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         keyboard.append([InlineKeyboardButton("Back", callback_data=f"sem_{sem}")])
         await query.edit_message_text(
-            f"Course: {course}\nSelect Resource:",
+            f"Course: {course}\n",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
