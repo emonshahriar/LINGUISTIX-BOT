@@ -15,8 +15,8 @@ SEMESTERS = {
         "GEDC01 Sociology Anthropology"
     ],
     "2": [
-        "UG1205 Morphology 1",
-        "UG1206 Phonetics and Phonology 1",
+        "UG1205 Phonetics and Phonology 1",
+        "UG1206 Morphology 1",
         "UG1207 Writing System and Orthography",
         "GEDC02 ICT Fundamentals",
         "GEDC03 Psychology"
