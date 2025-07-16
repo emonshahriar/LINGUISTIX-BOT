@@ -76,7 +76,7 @@ SEMESTERS = {
 def start_keyboard():
     keyboard = [
         [InlineKeyboardButton(f"{i}", callback_data=f"sem_{i}") for i in range(1, 9)],
-        [InlineKeyboardButton("ℹ️ Help", callback_data="help")]
+        [InlineKeyboardButton("Help", callback_data="help")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
