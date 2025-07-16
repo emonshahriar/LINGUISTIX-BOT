@@ -81,7 +81,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Use the inline keyboard to navigate through resources. Select semester, course, and the type of resource you want.\n"
+        "use the buttons to navigate through the resources. select the semester, course and the resource type you are looking for. use /start to initiate.\n"
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -192,7 +192,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("Delete cancelled.")
 
     elif data == "help":
-        await query.edit_message_text("Help:\nUse the buttons to browse/download resources.\nAdmins: use /upload and /delete commands, or inline buttons.")
+        await query.edit_message_text("use the buttons to navigate through the resources. select the semester, course and the resource type you are looking for. use /start to initiate.")
     elif data == "back_to_start":
         await query.edit_message_text(
             "Select a semester:",
