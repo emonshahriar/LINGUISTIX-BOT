@@ -48,3 +48,20 @@ def delete_resource(resource_id):
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM resources WHERE id=%s", (resource_id,))
         conn.commit()
+
+
+# broadcast user management
+
+def add_user(user_id, username=None):
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("""
+        INSERT INTO users (user_id, username)
+        VALUES (%s, %s)
+        ON CONFLICT (user_id) DO NOTHING
+        """, (user_id, username))
+        conn.commit()
+
+def get_all_user_ids():
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT user_id FROM users")
+        return [row[0] for row in cur.fetchall()]
