@@ -11,6 +11,9 @@ HELP_MESSAGE = (
     "Use /start to initiate."
 )
 
+# Add emojis to resource types
+COURSE_RESOURCES = ["📚 Books", "❓ Past Questions", "📄 Syllabus", "📝 Notes"]
+
 SEMESTERS = {
     "1": [
         "UG1101 Introduction to Linguistics",
@@ -69,12 +72,11 @@ SEMESTERS = {
         "TC4810 Capstone Course/Thesis/Internship"
     ]
 }
-COURSE_RESOURCES = ["Books", "Past Questions", "Syllabus", "Notes"]
 
 def start_keyboard():
     keyboard = [
         [InlineKeyboardButton(f"{i}", callback_data=f"sem_{i}") for i in range(1, 9)],
-        [InlineKeyboardButton("Help", callback_data="help")]
+        [InlineKeyboardButton("ℹ️ Help", callback_data="help")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -100,7 +102,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton(course, callback_data=f"course_{sem}_{i}")]
             for i, course in enumerate(courses)
         ]
-        keyboard.append([InlineKeyboardButton("Back", callback_data="back_to_start")])
+        keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data="back_to_start")])
         await query.edit_message_text(
             f"Semester {sem} Courses:",
             reply_markup=InlineKeyboardMarkup(keyboard)
@@ -110,13 +112,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         _, sem, idx = data.split("_")
         course = SEMESTERS.get(sem, [])[int(idx)]
         keyboard = [
-            [InlineKeyboardButton(res, callback_data=f"res_{sem}_{idx}_{res.lower()}")]
-            for res in COURSE_RESOURCES
+            [InlineKeyboardButton(COURSE_RESOURCES[i], callback_data=f"res_{sem}_{idx}_{COURSE_RESOURCES[i].split(' ',1)[1].lower()}")]
+            for i in range(len(COURSE_RESOURCES))
         ]
-        keyboard.append([InlineKeyboardButton("Back", callback_data=f"sem_{sem}")])
+        keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data=f"sem_{sem}")])
         # Add Upload button for admins
         if is_admin(user_id):
-            keyboard.append([InlineKeyboardButton("Upload Resource", callback_data=f"upload_{sem}_{idx}")])
+            keyboard.append([InlineKeyboardButton("⬆️ Upload Resource", callback_data=f"upload_{sem}_{idx}")])
         await query.edit_message_text(
             f"Course: {course}\n",
             reply_markup=InlineKeyboardMarkup(keyboard)
@@ -125,15 +127,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("res_"):
         _, sem, idx, res = data.split("_")
         course = SEMESTERS.get(sem, [])[int(idx)]
-        resources = get_resources(sem, course, res)
+        # Remove emoji if present for matching
+        res_type = res
+        for cr in COURSE_RESOURCES:
+            label = cr.split(" ", 1)[1].lower()
+            if label == res:
+                res_type = cr.split(" ", 1)[1]
+                break
+        resources = get_resources(sem, course, res_type)
         keyboard = [
             [InlineKeyboardButton(file_name, callback_data=f"file_{resource_id}")]
-            + ([InlineKeyboardButton("Delete", callback_data=f"delete_{resource_id}")] if is_admin(user_id) else [])
+            + ([InlineKeyboardButton("🗑️ Delete", callback_data=f"delete_{resource_id}")] if is_admin(user_id) else [])
             for resource_id, file_name, file_id in resources
         ]
-        keyboard.append([InlineKeyboardButton("Back", callback_data=f"course_{sem}_{idx}")])
+        keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data=f"course_{sem}_{idx}")])
         await query.edit_message_text(
-            f"{res.title()} for {course}:",
+            f"{res_type.title()} for {course}:",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
@@ -155,8 +164,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["upload_course"] = SEMESTERS.get(sem, [])[int(idx)]
         # Ask for resource type
         keyboard = [
-            [InlineKeyboardButton(res, callback_data=f"uploadtype_{res.lower()}")]
-            for res in COURSE_RESOURCES
+            [InlineKeyboardButton(COURSE_RESOURCES[i], callback_data=f"uploadtype_{COURSE_RESOURCES[i].split(' ',1)[1].lower()}")]
+            for i in range(len(COURSE_RESOURCES))
         ]
         await query.edit_message_text(
             "Select resource type to upload:",
@@ -166,6 +175,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("uploadtype_"):
         # Resource type selected, ask for file
         resource_type = data.split("_")[1]
+        # Match back to label for storage
+        for cr in COURSE_RESOURCES:
+            label = cr.split(" ", 1)[1].lower()
+            if label == resource_type:
+                resource_type = cr.split(" ", 1)[1]
+                break
         context.user_data["upload_resource_type"] = resource_type
         await query.edit_message_text(
             f"Send the file you want to upload for {context.user_data['upload_course']} ({resource_type})."
@@ -179,8 +194,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["delete_resource_id"] = resource_id
         # Ask for confirmation
         keyboard = [
-            [InlineKeyboardButton("Confirm Delete", callback_data=f"confirmdelete_{resource_id}")],
-            [InlineKeyboardButton("Cancel", callback_data=f"canceldelete_{resource_id}")]
+            [InlineKeyboardButton("✅ Confirm Delete", callback_data=f"confirmdelete_{resource_id}")],
+            [InlineKeyboardButton("❌ Cancel", callback_data=f"canceldelete_{resource_id}")]
         ]
         await query.edit_message_text(
             "Are you sure you want to delete this resource?",
