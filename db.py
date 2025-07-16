@@ -22,8 +22,7 @@ def init_db():
         cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id BIGINT PRIMARY KEY,
-            username TEXT,
-            is_admin BOOLEAN DEFAULT FALSE
+            username TEXT
         )
         """)
         conn.commit()
