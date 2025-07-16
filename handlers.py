@@ -23,8 +23,8 @@ SEMESTERS = {
         "GEDC01 Sociology Anthropology"
     ],
     "2": [
-        "UG1205 Morphology 1",
-        "UG1206 Phonetics and Phonology 1",
+        "UG1205 Phonetics and Phonology 1",
+        "UG1206 Morphology 1",
         "UG1207 Writing System and Orthography",
         "GEDC02 ICT Fundamentals",
         "GEDC03 Psychology"
@@ -223,8 +223,29 @@ async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await inline_upload_handler(update, context)
         context.user_data["awaiting_file_upload"] = False
 
+# Handler for admin broadcast command
+async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not is_admin(user_id):
+        await update.message.reply_text("You are not authorized.")
+        return
+
+    text = " ".join(context.args)
+    if not text:
+        await update.message.reply_text("Usage: /broadcast <your message>")
+        return
+
+    user_ids = get_all_user_ids_from_db()  # implement this function
+    for uid in user_ids:
+        try:
+            await context.bot.send_message(chat_id=uid, text=text)
+        except Exception as e:
+            # Handle blocked users, etc.
+            print(f"Failed to send to {uid}: {e}")
+
 def setup_handlers(app):
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
+    app.add_handler(CommandHandler("broadcast", broadcast))
