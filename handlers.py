@@ -1,10 +1,15 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telegram.ext import (
-    ContextTypes, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+    ContextTypes, CallbackQueryHandler, MessageHandler, filters, CommandHandler
 )
-from admin import upload_command, delete_command, is_admin, inline_upload_handler, inline_delete_handler
+from admin import is_admin, inline_upload_handler, inline_delete_handler
 from db import get_resources, get_resource_by_id
-import logging
+
+HELP_MESSAGE = (
+    "Use the buttons to navigate through the resources. "
+    "Select the semester, course and the resource type you are looking for. "
+    "Use /start to initiate."
+)
 
 SEMESTERS = {
     "1": [
@@ -15,8 +20,8 @@ SEMESTERS = {
         "GEDC01 Sociology Anthropology"
     ],
     "2": [
-        "UG1205 Phonetics and Phonology 1",
-        "UG1206 Morphology 1",
+        "UG1205 Morphology 1",
+        "UG1206 Phonetics and Phonology 1",
         "UG1207 Writing System and Orthography",
         "GEDC02 ICT Fundamentals",
         "GEDC03 Psychology"
@@ -80,9 +85,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "use the buttons to navigate through the resources. select the semester, course and the resource type you are looking for. use /start to initiate.\n"
-    )
+    await update.message.reply_text(HELP_MESSAGE)
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -192,7 +195,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("Delete cancelled.")
 
     elif data == "help":
-        await query.edit_message_text("use the buttons to navigate through the resources. select the semester, course and the resource type you are looking for. use /start to initiate.")
+        await query.edit_message_text(HELP_MESSAGE)
     elif data == "back_to_start":
         await query.edit_message_text(
             "Select a semester:",
@@ -208,7 +211,5 @@ async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def setup_handlers(app):
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("upload", upload_command))
-    app.add_handler(CommandHandler("delete", delete_command))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler))
