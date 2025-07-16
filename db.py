@@ -61,16 +61,30 @@ def delete_resource(resource_id):
 
 # broadcast user management
 
-def add_user(user_id, username=None):
+def add_user(user_id, username=None, is_admin=False):
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("""
-        INSERT INTO users (user_id, username)
-        VALUES (%s, %s)
-        ON CONFLICT (user_id) DO NOTHING
-        """, (user_id, username))
+        INSERT INTO users (user_id, username, is_admin)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (user_id) DO UPDATE SET username=EXCLUDED.username
+        """, (user_id, username, is_admin))
         conn.commit()
 
 def get_all_user_ids():
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("SELECT user_id FROM users")
         return [row[0] for row in cur.fetchall()]
+
+def is_admin(user_id):
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT is_admin FROM users WHERE user_id=%s", (user_id,))
+        result = cur.fetchone()
+        return result is not None and result[0] == True
+
+def set_admin(user_id, admin=True):
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            "UPDATE users SET is_admin=%s WHERE user_id=%s",
+            (admin, user_id)
+        )
+        conn.commit()
