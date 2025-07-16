@@ -18,7 +18,16 @@ def init_db():
             uploaded_at TIMESTAMP DEFAULT NOW()
         )
         """)
+        # Users table (for broadcast and admin)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id BIGINT PRIMARY KEY,
+            username TEXT,
+            is_admin BOOLEAN DEFAULT FALSE
+        )
+        """)
         conn.commit()
+
 
 def add_resource(semester, course, resource_type, file_id, file_name, uploader_id):
     with get_connection() as conn, conn.cursor() as cur:
